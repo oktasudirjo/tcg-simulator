@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokémon TCG - Enhanced</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Deck Builder Screen -->
+  <div id="deck-builder" class="screen">
+    <h1>🎴 Build Your 20-Card Deck</h1>
+    <p>Add Pokémon and Energy cards to build your deck.</p>
+    
+    <div class="zone-label">Available Cards</div>
+    <div id="available-cards" class="card-list"></div>
+
+    <div class="deck-preview">
+      <h3>Your Deck (<span id="deck-count">0</span>/20)</h3>
+      <div id="deck-cards" class="hand"></div>
+    </div>
+
+    <button id="start-game-btn" disabled>Start Game</button>
+  </div>
+
+  <!-- Game Screen (hidden by default) -->
+  <div id="game-screen" class="screen" style="display: none;">
+    <h1>🎮 Pokémon TCG - Enhanced Version</h1>
+    <!-- Opponent Area -->
+    <div class="opponent-area">
+      <div class="zone-header">
+        <div class="zone-label">Opponent's Active</div>
+        <div class="prize-count">Prizes: <span id="opponent-prizes">6</span></div>
+      </div>
+      <div id="opponent-active" class="pokemon-slot empty">Empty</div>
+    </div>
+
+    <!-- Player Area -->
+    <div class="player-area">
+      <div class="zone-header">
+        <div class="zone-label">Your Active Pokémon</div>
+        <div class="prize-count">Prizes: <span id="player-prizes">6</span></div>
+      </div>
+      <div id="player-active" class="pokemon-slot empty">Empty</div>
+      <button id="switch-btn" class="attack-btn" style="margin: 8px auto; display: block;" disabled>Switch Pokémon</button>
+
+      <div class="zone-label">Your Bench (Max 5)</div>
+      <div id="player-bench" class="bench"></div>
+
+      <div class="zone-label">Your Hand</div>
+      <div id="player-hand" class="hand"></div>
+
+      <div class="controls">
+        <button id="draw-btn">Draw Card</button>
+        <button id="end-turn-btn">End Turn</button>
+        <button id="attack-btn" disabled>Attack</button>
+      </div>
+
+      <div class="status" id="game-status">Start by playing a Basic Pokémon!</div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
