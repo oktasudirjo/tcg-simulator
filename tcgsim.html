@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poké-Data | Professional Collector Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; color: #2d3748; }
+        .limitless-card { background: white; border: 1px solid #e2e8f0; transition: all 0.2s ease; cursor: pointer; }
+        .limitless-card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #3182ce; }
+        .modal-overlay { background-color: rgba(26, 32, 44, 0.9); backdrop-filter: blur(8px); }
+        .energy-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 2px; }
+        .type-fire { background: #ff4422; } .type-water { background: #3399ff; } .type-grass { background: #77cc55; }
+        .type-lightning { background: #ffcc33; } .type-psychic { background: #aa5599; } .type-colorless { background: #ccccbb; }
+        .type-darkness { background: #777788; } .type-metal { background: #aaaabb; } .type-fighting { background: #ff8844; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="bg-[#1a202c] text-white py-4 shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <h1 class="text-xl font-extrabold tracking-tight uppercase cursor-pointer" onclick="location.reload()">
+                    <span class="text-blue-400">Limitless</span> <span class="text-gray-300 font-light">Analytics</span>
+                </h1>
+                <div class="flex gap-4 text-sm font-semibold uppercase tracking-wide">
+                    <button onclick="switchView('search')" id="nav-search" class="text-blue-400">Database</button>
+                    <button onclick="switchView('collection')" id="nav-collection" class="hover:text-blue-400">Collection</button>
+                </div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="text-xs font-bold bg-blue-900 px-3 py-1 rounded tracking-tighter">
+                    TOTAL VALUE: $<span id="total-value">0.00</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div class="md:col-span-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Search</label>
+                <form id="search-form" class="flex gap-2">
+                    <input type="text" id="search-input" placeholder="Name..." class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500" />
+                </form>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Expansion</label>
+                <select id="set-filter" onchange="handleFilterChange()" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm outline-none"></select>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Sort By</label>
+                <select id="sort-filter" onchange="handleFilterChange()" class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-sm font-bold text-blue-600 outline-none">
+                    <option value="number">Number</option>
+                    <option value="-tcgplayer.prices.holofoil.market">Price: High</option>
+                    <option value="-hp">HP: High</option>
+                    <option value="name">Name A-Z</option>
+                </select>
+            </div>
+            <div class="flex justify-between items-center md:pb-2">
+                <span class="text-[10px] font-bold text-gray-400">PAGE <span id="current-page-num" class="text-gray-900">1</span></span>
+                <div class="flex gap-1">
+                    <button onclick="changePage(-1)" id="prev-btn" class="px-3 py-1 bg-white border border-gray-300 rounded text-[10px] font-black hover:bg-gray-50 disabled:opacity-30">PREV</button>
+                    <button onclick="changePage(1)" id="next-btn" class="px-3 py-1 bg-white border border-gray-300 rounded text-[10px] font-black hover:bg-gray-50 disabled:opacity-30">NEXT</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loader" class="hidden justify-center items-center py-20"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div></div>
+        
+        <div id="card-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+    </main>
+
+    <div id="card-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>
+        <div class="bg-white rounded shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden relative z-10 flex flex-col md:flex-row">
+            
+            <div class="md:w-5/12 p-6 bg-gray-50 flex flex-col items-center justify-center border-r border-gray-200">
+                <img id="modal-img" src="" class="w-full max-w-xs rounded-lg shadow-2xl mb-6">
+                <div id="modal-action-container" class="w-full"></div>
+            </div>
+
+            <div class="md:w-7/12 p-8 overflow-y-auto bg-white">
+                <div class="flex justify-between items-start">
+                    <h2 id="modal-title" class="text-3xl font-black text-gray-900 uppercase"></h2>
+                    <span id="modal-hp" class="text-2xl font-black text-red-600"></span>
+                </div>
+                <p id="modal-set-info" class="text-blue-600 font-bold text-[10px] uppercase tracking-tighter mb-6"></p>
+                
+                <div id="modal-details-content" class="space-y-4"></div>
+
+                <div class="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-[10px]">
+                    <div><p class="text-gray-400 font-bold uppercase">Weakness</p><p id="modal-weakness" class="font-bold text-sm"></p></div>
+                    <div><p class="text-gray-400 font-bold uppercase">Resistance</p><p id="modal-resistance" class="font-bold text-sm"></p></div>
+                    <div><p class="text-gray-400 font-bold uppercase">Retreat</p><p id="modal-retreat" class="font-bold text-sm"></p></div>
+                    <div><p class="text-gray-400 font-bold uppercase">Price</p><p id="modal-price" class="font-bold text-sm text-green-600"></p></div>
+                </div>
+            </div>
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
+        </div>
+    </div>
+
+    <script>
+        let currentCards = [];
+        let myCollection = JSON.parse(localStorage.getItem('pokeDeck')) || [];
+        let currentPage = 1;
+        let viewMode = 'search';
+
+        const grid = document.getElementById('card-grid');
+
+        window.onload = () => { loadSets(); fetchCards(); updateUI(); };
+
+        async function loadSets() {
+            const res = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate');
+            const data = await res.json();
+            const filter = document.getElementById('set-filter');
+            filter.innerHTML = '<option value="">All Sets</option>' + data.data.map(s => `<option value="${s.id}">${s.name} (${s.printedTotal})</option>`).join('');
+        }
+
+        async function fetchCards() {
+            if (viewMode === 'collection') {
+                renderCards(myCollection);
+                document.getElementById('pagination-container').classList.add('hidden');
+                return;
+            }
+            document.getElementById('loader').classList.replace('hidden', 'flex');
+            const query = (document.getElementById('search-input').value.trim() ? `name:"${document.getElementById('search-input').value.trim()}*"` : 'supertype:pokemon') + 
+                          (document.getElementById('set-filter').value ? ` set.id:${document.getElementById('set-filter').value}` : '');
+            
+            try {
+                const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${query}&page=${currentPage}&pageSize=24&orderBy=${document.getElementById('sort-filter').value}`);
+                const data = await res.json();
+                currentCards = data.data || [];
+                renderCards(currentCards);
+                document.getElementById('current-page-num').innerText = currentPage;
+            } finally {
+                document.getElementById('loader').classList.replace('flex', 'hidden');
+            }
+        }
+
+        function renderCards(cards) {
+            grid.innerHTML = cards.map(card => {
+                const price = card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0;
+                return `
+                <div class="limitless-card rounded p-2 flex flex-col relative" onclick="openModal('${card.id}')">
+                    <div class="relative overflow-hidden rounded-sm mb-2">
+                        <img src="${card.images.small}" class="w-full h-auto">
+                        <span class="absolute bottom-0 right-0 bg-black/70 text-white text-[20px] px-1 font-mono">#${card.number}</span>
+                    </div>
+                    <h4 class="text-[10px] font-black truncate text-gray-900">${card.name}</h4>
+                    <div class="flex justify-between items-center mt-1 text-[9px] font-bold">
+                        <span class="text-blue-500">${card.set.ptcgoCode || 'SET'}</span>
+                        <span class="text-green-600">$${price.toFixed(2)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openModal(cardId) {
+            const card = [...currentCards, ...myCollection].find(c => c.id === cardId);
+            if (!card) return;
+
+            document.getElementById('modal-img').src = card.images.large;
+            document.getElementById('modal-title').innerText = card.name;
+            document.getElementById('modal-hp').innerText = card.hp ? `HP ${card.hp}` : '';
+            document.getElementById('modal-set-info').innerHTML = `${card.set.name} — #${card.number}/${card.set.printedTotal}<br>Release Date : ${card.set.releaseDate}`;
+            
+            // Detail logic (Abilities & Attacks)
+            let html = '';
+            if (card.abilities) {
+                card.abilities.forEach(a => {
+                    html += `<div class="bg-red-50 p-3 rounded border-l-4 border-red-500">
+                        <p class="text-[9px] font-black text-red-600 uppercase">${a.type}</p>
+                        <p class="font-bold text-sm">${a.name}</p>
+                        <p class="text-xs text-gray-600">${a.text}</p>
+                    </div>`;
+                });
+            }
+            if (card.attacks) {
+                card.attacks.forEach(a => {
+                    html += `<div class="py-3 border-b border-gray-100 flex justify-between items-start">
+                        <div class="pr-4">
+                            <p class="font-bold text-sm">${a.name}</p>
+                            <p class="text-xs text-gray-500">${a.text || ''}</p>
+                        </div>
+                        <span class="font-black text-lg">${a.damage || ''}</span>
+                    </div>`;
+                });
+            }
+            document.getElementById('modal-details-content').innerHTML = html;
+            
+            // Footer Stats
+            document.getElementById('modal-weakness').innerText = card.weaknesses?.[0] ? `${card.weaknesses[0].type} ${card.weaknesses[0].value}` : 'None';
+            document.getElementById('modal-resistance').innerText = card.resistances?.[0] ? `${card.resistances[0].type} ${card.resistances[0].value}` : 'None';
+            document.getElementById('modal-retreat').innerText = card.retreatCost?.length || '0';
+            document.getElementById('modal-price').innerText = `$${(card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0).toFixed(2)}`;
+
+            const isOwned = myCollection.some(c => c.id === card.id);
+            document.getElementById('modal-action-container').innerHTML = `
+                <button onclick="${isOwned ? `removeFromDeck('${card.id}')` : `addToDeck('${card.id}')`}; closeModal();" 
+                class="w-full py-3 rounded font-black text-xs tracking-widest text-white uppercase ${isOwned ? 'bg-red-600' : 'bg-blue-600'}">
+                ${isOwned ? 'Remove' : 'Add to Collection'}
+                </button>`;
+            
+            document.getElementById('card-modal').classList.remove('hidden');
+        }
+
+        function handleFilterChange() { currentPage = 1; fetchCards(); }
+        function changePage(dir) { currentPage += dir; fetchCards(); window.scrollTo(0,0); }
+        function closeModal() { document.getElementById('card-modal').classList.add('hidden'); }
+        function addToDeck(id) { const c = currentCards.find(x => x.id === id); if(c) { myCollection.push(c); save(); } }
+        function removeFromDeck(id) { myCollection = myCollection.filter(x => x.id !== id); save(); }
+        function save() { localStorage.setItem('pokeDeck', JSON.stringify(myCollection)); updateUI(); }
+        function updateUI() { 
+            const total = myCollection.reduce((sum, c) => sum + (c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || 0), 0);
+            document.getElementById('total-value').innerText = total.toFixed(2);
+        }
+        function switchView(v) { viewMode = v; currentPage = 1; fetchCards(); }
+    </script>
+</body>
+</html>
